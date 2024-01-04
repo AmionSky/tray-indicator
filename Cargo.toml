@@ -1,7 +1,12 @@
 [package]
 name = "tray-indicator"
+description = "A simple tray-icon/app-indicator crate"
 version = "0.1.0"
 edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/AmionSky/tray-indicator"
+keywords = ["tray", "appindicator", "notify-icon"]
+categories = ["gui"]
 
 [dependencies]
 thiserror = "1.0.0"
@@ -17,10 +22,7 @@ features = [
 ]
 
 [workspace]
-members = [
-    ".",
-    "examples/simple",
-]
+members = [".", "examples/simple"]
 
 [workspace.dependencies]
 tray-indicator.path = "."
