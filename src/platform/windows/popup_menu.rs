@@ -26,7 +26,7 @@ pub(super) unsafe fn display(hwnd: HWND, x: i32, y: i32) -> Result<(), MenuError
                         cch: label.len() - 1, // Does it need to be len or len-1?
                         ..Default::default()
                     },
-                    MenuItem::Text { label } => MENUITEMINFOW {
+                    MenuItem::Label { label } => MENUITEMINFOW {
                         cbSize: size_of::<MENUITEMINFOW>() as u32,
                         fMask: MIIM_TYPE | MIIM_STATE,
                         fType: MFT_STRING,

@@ -4,7 +4,7 @@ fn main() {
     println!("Simple tray-indicator example.");
 
     let menu = vec![
-        MenuItem::text("Text"),
+        MenuItem::label("Text"),
         MenuItem::separator(),
         MenuItem::button("Action", || println!("Simple action.")),
         MenuItem::button("Exit", Tray::exit),
