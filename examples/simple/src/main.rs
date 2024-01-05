@@ -12,5 +12,8 @@ fn main() {
         MenuItem::button("Exit", Tray::exit),
     ]);
 
+    #[cfg(target_os = "linux")]
+    tray.set_icon(include_bytes!("../app.ico"));
+
     tray.display().expect("Failed to display tray icon");
 }

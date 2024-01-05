@@ -21,6 +21,10 @@ features = [
     "Win32_Graphics_Gdi",
 ]
 
+[target.'cfg(target_os = "linux")'.dependencies]
+ksni = "0.2.1"
+ico = "0.3.0"
+
 [workspace]
 members = [".", "examples/simple"]
 
