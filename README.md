@@ -5,6 +5,7 @@ A simple tray-icon/app-indicator crate.
 ## Supported platforms
 
 * Windows
+* Linux
 
 ## License
 
