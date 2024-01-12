@@ -1,15 +1,18 @@
+mod error;
 mod notify_icon;
 mod popup_menu;
 mod string;
+mod util;
 
 pub(crate) use string::NativeString;
 
+use self::error::WinError;
 use crate::Tray;
 use std::cell::RefCell;
 use thiserror::Error;
 
 thread_local! {
-    static TRAY_DATA: RefCell<Tray> = panic!("Tray data is not initialized")
+    static TRAY_DATA: RefCell<Tray> = panic!("Tray data is not initialized");
 }
 
 pub(crate) fn display(tray: Tray) -> Result<(), TrayError> {
@@ -27,20 +30,20 @@ pub(crate) fn display(tray: Tray) -> Result<(), TrayError> {
 
 pub(crate) fn exit() {
     unsafe {
-        windows::Win32::UI::WindowsAndMessaging::PostQuitMessage(0);
+        windows_sys::Win32::UI::WindowsAndMessaging::PostQuitMessage(0);
     }
 }
 
 #[derive(Debug, Error)]
 pub enum TrayError {
     #[error("Failed to get process instance handle. {0}")]
-    NoInstance(#[source] windows::core::Error),
+    NoInstance(#[source] WinError),
     #[error("Failed to register tray window class. {0}")]
-    WndClassRegister(#[source] windows::core::Error),
+    WndClassRegister(#[source] WinError),
     #[error("Failed to create tray window. {0}")]
-    WindowCreate(#[source] windows::core::Error),
+    WindowCreate(#[source] WinError),
     #[error("Failed to load icon for tray. {0}")]
-    IconLoad(#[source] windows::core::Error),
+    IconLoad(#[source] WinError),
     #[error("Failed to display notify icon.")]
     Display,
     #[error("Notify icon API version is not supported by the OS.")]
