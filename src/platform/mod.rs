@@ -2,4 +2,5 @@
 #[cfg_attr(target_os = "linux", path = "linux/mod.rs")]
 mod backend;
 
-pub(crate) use backend::{display, exit, NativeString, TrayError};
+pub use backend::TrayError;
+pub(crate) use backend::{display, exit, NativeString};
