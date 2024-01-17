@@ -10,7 +10,7 @@ use windows_sys::Win32::UI::Shell::{
     NIM_SETVERSION, NIN_SELECT, NOTIFYICONDATAW, NOTIFYICONDATAW_0, NOTIFYICON_VERSION_4,
 };
 use windows_sys::Win32::UI::WindowsAndMessaging::{
-    CreateWindowExW, DefWindowProcW, DispatchMessageW, GetMessageW, LoadIconW, PostQuitMessage,
+    CreateWindowExW, DefWindowProcW, DispatchMessageW, GetMessageW, PostQuitMessage,
     RegisterClassExW, TranslateMessage, CW_USEDEFAULT, IDI_APPLICATION, MSG, WM_COMMAND,
     WM_CONTEXTMENU, WM_DESTROY, WM_USER, WNDCLASSEXW, WS_EX_NOACTIVATE,
 };
@@ -71,9 +71,22 @@ pub(super) unsafe fn create_window(instance: HINSTANCE) -> Result<HWND, TrayErro
 }
 
 pub(super) unsafe fn create_notify_icon(instance: HINSTANCE, hwnd: HWND) -> Result<(), TrayError> {
-    let icon = match LoadIconW(instance, IDI_APPLICATION) {
-        0 => return Err(TrayError::IconLoad(WinError::last())),
-        handle => handle,
+    #[cfg(not(feature = "dpiaware"))]
+    let icon =
+        match windows_sys::Win32::UI::WindowsAndMessaging::LoadIconW(instance, IDI_APPLICATION) {
+            0 => return Err(TrayError::IconLoad(WinError::last())),
+            handle => handle,
+        };
+
+    #[cfg(feature = "dpiaware")]
+    let icon = {
+        use windows_sys::Win32::UI::Controls::{LoadIconMetric, LIM_SMALL};
+        let mut icon = 0isize;
+        let result = LoadIconMetric(instance, IDI_APPLICATION, LIM_SMALL, &mut icon);
+        if result != windows_sys::Win32::Foundation::S_OK {
+            return Err(TrayError::IconLoad(WinError::new(result as u32)));
+        }
+        icon
     };
 
     let data = TRAY_DATA.with(|data| NOTIFYICONDATAW {

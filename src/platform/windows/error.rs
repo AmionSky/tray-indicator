@@ -1,8 +1,7 @@
 use std::ptr::null;
 use windows_sys::Win32::Foundation::{GetLastError, WIN32_ERROR};
 use windows_sys::Win32::System::Diagnostics::Debug::{
-    FormatMessageW, FORMAT_MESSAGE_FROM_SYSTEM,
-    FORMAT_MESSAGE_IGNORE_INSERTS,
+    FormatMessageW, FORMAT_MESSAGE_FROM_SYSTEM, FORMAT_MESSAGE_IGNORE_INSERTS,
 };
 
 #[derive(Debug)]
@@ -12,12 +11,13 @@ pub struct WinError {
 }
 
 impl WinError {
+    pub(super) fn new(code: WIN32_ERROR) -> Self {
+        let message = unsafe { get_error_message(code) };
+        Self { code, message }
+    }
+
     pub(super) fn last() -> Self {
-        unsafe {
-            let code = GetLastError();
-            let message = get_error_message(code);
-            Self { code, message }
-        }
+        Self::new(unsafe { GetLastError() })
     }
 
     pub fn code(&self) -> WIN32_ERROR {
