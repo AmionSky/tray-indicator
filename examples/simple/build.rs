@@ -2,6 +2,7 @@ fn main() {
     if std::env::var("CARGO_CFG_TARGET_OS").unwrap() == "windows" {
         let mut res = tauri_winres::WindowsResource::new();
         res.set_icon("app.ico");
+        #[cfg(feature = "dpiaware")]
         res.set_manifest(r#"
             <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
             <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">

@@ -3,6 +3,9 @@ name = "simple"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+dpiaware = ["tray-indicator/dpiaware"]
+
 [dependencies]
 tray-indicator.workspace = true
 
