@@ -1,18 +1,20 @@
+use super::icon::Icon;
 use super::{popup_menu, util, TrayError, WinError, TRAY_DATA};
 use crate::MenuItem;
+use std::cell::Cell;
 use std::mem::size_of;
 use std::ptr::null;
 use windows_sys::core::{w, GUID, PCWSTR};
 use windows_sys::Win32::Foundation::{HINSTANCE, HWND, LPARAM, LRESULT, POINT, WPARAM};
 use windows_sys::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows_sys::Win32::UI::Shell::{
-    Shell_NotifyIconW, NIF_GUID, NIF_ICON, NIF_MESSAGE, NIF_SHOWTIP, NIF_TIP, NIM_ADD,
+    Shell_NotifyIconW, NIF_GUID, NIF_ICON, NIF_MESSAGE, NIF_SHOWTIP, NIF_TIP, NIM_ADD, NIM_MODIFY,
     NIM_SETVERSION, NIN_SELECT, NOTIFYICONDATAW, NOTIFYICONDATAW_0, NOTIFYICON_VERSION_4,
 };
 use windows_sys::Win32::UI::WindowsAndMessaging::{
     CreateWindowExW, DefWindowProcW, DispatchMessageW, GetMessageW, PostQuitMessage,
-    RegisterClassExW, TranslateMessage, CW_USEDEFAULT, IDI_APPLICATION, MSG, WM_COMMAND,
-    WM_CONTEXTMENU, WM_DESTROY, WM_USER, WNDCLASSEXW, WS_EX_NOACTIVATE,
+    RegisterClassExW, RegisterWindowMessageW, TranslateMessage, CW_USEDEFAULT, IDI_APPLICATION,
+    MSG, WM_COMMAND, WM_CONTEXTMENU, WM_CREATE, WM_DESTROY, WM_USER, WNDCLASSEXW, WS_EX_NOACTIVATE,
 };
 
 const TRAY_CLASS: PCWSTR = w!("TrayWndClass");
@@ -71,29 +73,13 @@ pub(super) unsafe fn create_window(instance: HINSTANCE) -> Result<HWND, TrayErro
 }
 
 pub(super) unsafe fn create_notify_icon(instance: HINSTANCE, hwnd: HWND) -> Result<(), TrayError> {
-    #[cfg(not(feature = "dpiaware"))]
-    let icon =
-        match windows_sys::Win32::UI::WindowsAndMessaging::LoadIconW(instance, IDI_APPLICATION) {
-            0 => return Err(TrayError::IconLoad(WinError::last())),
-            handle => handle,
-        };
-
-    #[cfg(feature = "dpiaware")]
-    let icon = {
-        use windows_sys::Win32::UI::Controls::{LoadIconMetric, LIM_SMALL};
-        let mut icon = 0isize;
-        let result = LoadIconMetric(instance, IDI_APPLICATION, LIM_SMALL, &mut icon);
-        if result != windows_sys::Win32::Foundation::S_OK {
-            return Err(TrayError::IconLoad(WinError::new(result as u32)));
-        }
-        icon
-    };
+    let icon = Icon::new(instance, IDI_APPLICATION).map_err(TrayError::IconLoad)?;
 
     let data = TRAY_DATA.with(|data| NOTIFYICONDATAW {
         cbSize: size_of::<NOTIFYICONDATAW>() as u32,
         hWnd: hwnd,
         guidItem: GUID::from_u128(data.borrow().guid),
-        hIcon: icon,
+        hIcon: icon.get(),
         uCallbackMessage: WM_TRAY,
         uFlags: NIF_GUID | NIF_SHOWTIP | NIF_TIP | NIF_ICON | NIF_MESSAGE,
         szTip: (&data.borrow().title).into(),
@@ -108,14 +94,20 @@ pub(super) unsafe fn create_notify_icon(instance: HINSTANCE, hwnd: HWND) -> Resu
         hBalloonIcon: 0,
     });
 
-    // Display
-    if Shell_NotifyIconW(NIM_ADD, &data) == 0 {
-        return Err(TrayError::Display);
-    }
-
-    // Set API version
-    if Shell_NotifyIconW(NIM_SETVERSION, &data) == 0 {
-        return Err(TrayError::Version);
+    // Display / Update
+    match Shell_NotifyIconW(NIM_ADD, &data) {
+        // If it failed to add, try to modify it
+        0 => {
+            if Shell_NotifyIconW(NIM_MODIFY, &data) == 0 {
+                return Err(TrayError::Display);
+            }
+        }
+        // If it was successfully added, set API version
+        _ => {
+            if Shell_NotifyIconW(NIM_SETVERSION, &data) == 0 {
+                return Err(TrayError::Version);
+            }
+        }
     }
 
     Ok(())
@@ -131,8 +123,21 @@ pub(super) unsafe fn run_message_loop(hwnd: HWND) {
     }
 }
 
+unsafe fn recreate_notify_icon(hwnd: HWND) -> Result<(), TrayError> {
+    let instance = get_instance()?;
+    create_notify_icon(instance, hwnd)
+}
+
+thread_local! {
+    static WM_TASKBAR_RESTART: Cell<u32> = Cell::new(0);
+}
+
 unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
     match msg {
+        // Register taskbar restart message
+        WM_CREATE => {
+            WM_TASKBAR_RESTART.set(RegisterWindowMessageW(w!("TaskbarCreated")));
+        }
         WM_TRAY => match util::loword(lparam) {
             NIN_SELECT => TRAY_DATA.with(|data| {
                 if let Some(action) = &data.borrow().click {
@@ -162,7 +167,15 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: 
             }
         }
         WM_DESTROY => PostQuitMessage(0),
-        _ => return DefWindowProcW(hwnd, msg, wparam, lparam),
+        _ => {
+            // Handle taskbar restart message
+            if msg == WM_TASKBAR_RESTART.get() {
+                if let Err(error) = recreate_notify_icon(hwnd) {
+                    eprintln!("Failed to recreate tray icon: {error}");
+                }
+            }
+        }
     }
-    0
+
+    DefWindowProcW(hwnd, msg, wparam, lparam)
 }

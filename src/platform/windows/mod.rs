@@ -1,4 +1,5 @@
 mod error;
+mod icon;
 mod notify_icon;
 mod popup_menu;
 mod string;
