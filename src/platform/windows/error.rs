@@ -1,3 +1,4 @@
+use std::cell::OnceCell;
 use std::ptr::null;
 use windows_sys::Win32::Foundation::{GetLastError, WIN32_ERROR};
 use windows_sys::Win32::System::Diagnostics::Debug::{
@@ -7,13 +8,12 @@ use windows_sys::Win32::System::Diagnostics::Debug::{
 #[derive(Debug)]
 pub struct WinError {
     code: WIN32_ERROR,
-    message: String,
+    message: OnceCell<String>,
 }
 
 impl WinError {
     pub(super) fn new(code: WIN32_ERROR) -> Self {
-        let message = unsafe { get_error_message(code) };
-        Self { code, message }
+        Self { code, message: OnceCell::new() }
     }
 
     pub(super) fn last() -> Self {
@@ -25,20 +25,22 @@ impl WinError {
     }
 
     pub fn message(&self) -> &String {
-        &self.message
+        self.message.get_or_init(|| {
+            unsafe { get_error_message(self.code) }
+        })
     }
 }
 
 impl std::fmt::Display for WinError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} ({:X})", self.message, self.code)
+        write!(f, "{} ({:X})", self.message(), self.code())
     }
 }
 
 impl std::error::Error for WinError {}
 
 unsafe fn get_error_message(code: WIN32_ERROR) -> String {
-    let mut buffer = [0u16; 4096];
+    let mut buffer = vec![0u16; 4096];
     let length = FormatMessageW(
         FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
         null(),
