@@ -129,7 +129,7 @@ unsafe fn recreate_notify_icon(hwnd: HWND) -> Result<(), TrayError> {
 }
 
 thread_local! {
-    static WM_TASKBAR_RESTART: Cell<u32> = Cell::new(0);
+    static WM_TASKBAR_RESTART: Cell<u32> = const { Cell::new(0) };
 }
 
 unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
