@@ -11,6 +11,23 @@ use windows_sys::Win32::UI::WindowsAndMessaging::{
     TPM_BOTTOMALIGN, TPM_LEFTALIGN, TPM_LEFTBUTTON, TRACK_POPUP_MENU_FLAGS,
 };
 
+const fn mii_default() -> MENUITEMINFOW {
+    MENUITEMINFOW {
+        cbSize: size_of::<MENUITEMINFOW>() as u32,
+        fMask: 0,
+        fType: 0,
+        fState: 0,
+        wID: 0,
+        hSubMenu: 0,
+        hbmpChecked: 0,
+        hbmpUnchecked: 0,
+        dwItemData: 0,
+        dwTypeData: null_mut(),
+        cch: 0,
+        hbmpItem: 0,
+    }
+}
+
 pub(super) unsafe fn display(hwnd: HWND, x: i32, y: i32) -> Result<(), MenuError> {
     // Create menu items
     let Some(items) = TRAY_DATA.with(|data| {
@@ -19,49 +36,25 @@ pub(super) unsafe fn display(hwnd: HWND, x: i32, y: i32) -> Result<(), MenuError
                 .enumerate()
                 .map(|(i, item)| match item {
                     MenuItem::Button { label, action: _ } => MENUITEMINFOW {
-                        cbSize: size_of::<MENUITEMINFOW>() as u32,
                         fMask: MIIM_TYPE | MIIM_ID,
                         fType: MFT_STRING,
                         wID: i as u32,
                         dwTypeData: label.as_ptr() as PWSTR,
                         cch: label.len() - 1, // Does it need to be len or len-1?
-                        // Unset
-                        fState: 0,
-                        hSubMenu: 0,
-                        hbmpChecked: 0,
-                        hbmpUnchecked: 0,
-                        dwItemData: 0,
-                        hbmpItem: 0,
+                        ..mii_default()
                     },
                     MenuItem::Label { label } => MENUITEMINFOW {
-                        cbSize: size_of::<MENUITEMINFOW>() as u32,
                         fMask: MIIM_TYPE | MIIM_STATE,
                         fType: MFT_STRING,
                         fState: MFS_GRAYED,
                         dwTypeData: label.as_ptr() as PWSTR,
                         cch: label.len() - 1,
-                        // Unset
-                        wID: 0,
-                        hSubMenu: 0,
-                        hbmpChecked: 0,
-                        hbmpUnchecked: 0,
-                        dwItemData: 0,
-                        hbmpItem: 0,
+                        ..mii_default()
                     },
                     MenuItem::Separator => MENUITEMINFOW {
-                        cbSize: size_of::<MENUITEMINFOW>() as u32,
                         fMask: MIIM_TYPE,
                         fType: MFT_SEPARATOR,
-                        // Unset
-                        fState: 0,
-                        wID: 0,
-                        hSubMenu: 0,
-                        hbmpChecked: 0,
-                        hbmpUnchecked: 0,
-                        dwItemData: 0,
-                        dwTypeData: null_mut(),
-                        cch: 0,
-                        hbmpItem: 0,
+                        ..mii_default()
                     },
                 })
                 .collect::<Vec<MENUITEMINFOW>>()
