@@ -1,5 +1,5 @@
-use std::cell::OnceCell;
 use std::ptr::null;
+use std::sync::OnceLock;
 use windows_sys::Win32::Foundation::{GetLastError, WIN32_ERROR};
 use windows_sys::Win32::System::Diagnostics::Debug::{
     FormatMessageW, FORMAT_MESSAGE_FROM_SYSTEM, FORMAT_MESSAGE_IGNORE_INSERTS,
@@ -8,12 +8,12 @@ use windows_sys::Win32::System::Diagnostics::Debug::{
 #[derive(Debug)]
 pub struct WinError {
     code: WIN32_ERROR,
-    message: OnceCell<String>,
+    message: OnceLock<String>,
 }
 
 impl WinError {
     pub(super) fn new(code: WIN32_ERROR) -> Self {
-        Self { code, message: OnceCell::new() }
+        Self { code, message: OnceLock::new() }
     }
 
     pub(super) fn last() -> Self {
