@@ -51,11 +51,9 @@ pub(super) unsafe fn display(hwnd: HWND, x: i32, y: i32) -> Result<(), MenuError
                         cch: label.len() - 1,
                         ..mii_default()
                     },
-                    MenuItem::Separator => MENUITEMINFOW {
-                        fMask: MIIM_TYPE,
-                        fType: MFT_SEPARATOR,
-                        ..mii_default()
-                    },
+                    MenuItem::Separator => {
+                        MENUITEMINFOW { fMask: MIIM_TYPE, fType: MFT_SEPARATOR, ..mii_default() }
+                    }
                 })
                 .collect::<Vec<MENUITEMINFOW>>()
         })

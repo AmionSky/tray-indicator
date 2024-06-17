@@ -25,9 +25,7 @@ impl WinError {
     }
 
     pub fn message(&self) -> &String {
-        self.message.get_or_init(|| {
-            unsafe { get_error_message(self.code) }
-        })
+        self.message.get_or_init(|| unsafe { get_error_message(self.code) })
     }
 }
 
