@@ -1,7 +1,7 @@
 [package]
 name = "tray-indicator"
 description = "A simple tray-icon/app-indicator crate"
-version = "0.3.3"
+version = "0.3.4"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/AmionSky/tray-indicator"
@@ -15,7 +15,7 @@ dpiaware = ["windows-sys/Win32_UI_Controls"]
 thiserror = "1.0.0"
 
 [target.'cfg(target_os = "windows")'.dependencies.windows-sys]
-version = "0.52.0"
+version = "0.59.0"
 features = [
     "Win32_Foundation",
     "Win32_UI_Shell",

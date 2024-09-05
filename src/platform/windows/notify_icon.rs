@@ -3,7 +3,7 @@ use super::{popup_menu, util, TrayError, WinError, TRAY_DATA};
 use crate::MenuItem;
 use std::cell::Cell;
 use std::mem::size_of;
-use std::ptr::null;
+use std::ptr::{null, null_mut};
 use windows_sys::core::{w, GUID, PCWSTR};
 use windows_sys::Win32::Foundation::{HINSTANCE, HWND, LPARAM, LRESULT, POINT, WPARAM};
 use windows_sys::Win32::System::LibraryLoader::GetModuleHandleW;
@@ -22,7 +22,7 @@ const WM_TRAY: u32 = WM_USER + 0x100;
 
 pub(super) unsafe fn get_instance() -> Result<HINSTANCE, TrayError> {
     match GetModuleHandleW(null()) {
-        0 => Err(TrayError::NoInstance(WinError::last())),
+        i if i.is_null() => Err(TrayError::NoInstance(WinError::last())),
         instance => Ok(instance),
     }
 }
@@ -38,11 +38,11 @@ pub(super) unsafe fn create_window(instance: HINSTANCE) -> Result<HWND, TrayErro
         style: 0,
         cbClsExtra: 0,
         cbWndExtra: 0,
-        hIcon: 0,
-        hCursor: 0,
-        hbrBackground: 0,
+        hIcon: null_mut(),
+        hCursor: null_mut(),
+        hbrBackground: null_mut(),
         lpszMenuName: null(),
-        hIconSm: 0,
+        hIconSm: null_mut(),
     };
 
     if RegisterClassExW(&class) == 0 {
@@ -59,13 +59,13 @@ pub(super) unsafe fn create_window(instance: HINSTANCE) -> Result<HWND, TrayErro
         CW_USEDEFAULT,
         CW_USEDEFAULT,
         CW_USEDEFAULT,
-        0,
-        0,
+        null_mut(),
+        null_mut(),
         instance,
         null(),
     );
 
-    if hwnd == 0 {
+    if hwnd.is_null() {
         return Err(TrayError::WindowCreate(WinError::last()));
     }
 
@@ -91,7 +91,7 @@ pub(super) unsafe fn create_notify_icon(instance: HINSTANCE, hwnd: HWND) -> Resu
         szInfo: [0; 256],
         szInfoTitle: [0; 64],
         dwInfoFlags: 0,
-        hBalloonIcon: 0,
+        hBalloonIcon: null_mut(),
     });
 
     // Display / Update
@@ -114,8 +114,14 @@ pub(super) unsafe fn create_notify_icon(instance: HINSTANCE, hwnd: HWND) -> Resu
 }
 
 pub(super) unsafe fn run_message_loop(hwnd: HWND) {
-    let mut msg =
-        MSG { hwnd: 0, message: 0, wParam: 0, lParam: 0, time: 0, pt: POINT { x: 0, y: 0 } };
+    let mut msg = MSG {
+        hwnd: null_mut(),
+        message: 0,
+        wParam: 0,
+        lParam: 0,
+        time: 0,
+        pt: POINT { x: 0, y: 0 },
+    };
 
     while GetMessageW(&mut msg, hwnd, 0, 0) != 0 {
         TranslateMessage(&msg);

@@ -18,13 +18,13 @@ const fn mii_default() -> MENUITEMINFOW {
         fType: 0,
         fState: 0,
         wID: 0,
-        hSubMenu: 0,
-        hbmpChecked: 0,
-        hbmpUnchecked: 0,
+        hSubMenu: null_mut(),
+        hbmpChecked: null_mut(),
+        hbmpUnchecked: null_mut(),
         dwItemData: 0,
         dwTypeData: null_mut(),
         cch: 0,
-        hbmpItem: 0,
+        hbmpItem: null_mut(),
     }
 }
 
@@ -88,7 +88,7 @@ struct PopupMenu(HMENU);
 impl PopupMenu {
     pub fn new() -> Result<Self, MenuError> {
         match unsafe { CreatePopupMenu() } {
-            0 => Err(MenuError::Create(WinError::last())),
+            m if m.is_null() => Err(MenuError::Create(WinError::last())),
             menu => Ok(Self(menu)),
         }
     }

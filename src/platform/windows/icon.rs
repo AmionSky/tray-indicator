@@ -11,7 +11,7 @@ impl Icon {
         use windows_sys::Win32::UI::WindowsAndMessaging::LoadIconW;
 
         match unsafe { LoadIconW(instance, icon) } {
-            0 => Err(WinError::last()),
+            h if h.is_null() => Err(WinError::last()),
             handle => Ok(Self(handle)),
         }
     }
@@ -21,7 +21,7 @@ impl Icon {
         use windows_sys::Win32::Foundation::S_OK;
         use windows_sys::Win32::UI::Controls::{LoadIconMetric, LIM_SMALL};
 
-        let mut handle = 0isize;
+        let mut handle = std::ptr::null_mut();
         match unsafe { LoadIconMetric(instance, icon, LIM_SMALL, &mut handle) } {
             S_OK => Ok(Self(handle)),
             error => Err(WinError::new(error as u32)),
