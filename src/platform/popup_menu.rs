@@ -2,7 +2,6 @@ use super::{WinError, TRAY_DATA};
 use crate::MenuItem;
 use std::mem::size_of;
 use std::ptr::{null, null_mut};
-use thiserror::Error;
 use windows_sys::core::PWSTR;
 use windows_sys::Win32::Foundation::HWND;
 use windows_sys::Win32::UI::WindowsAndMessaging::{
@@ -103,14 +102,32 @@ impl Drop for PopupMenu {
     }
 }
 
-#[derive(Debug, Error)]
+#[derive(Debug)]
 pub(super) enum MenuError {
-    #[error("Failed to create popup menu. {0}")]
-    Create(#[source] WinError),
-    #[error("Failed to add menu item. {0}")]
-    AddItem(#[source] WinError),
-    #[error("Failed to bring dummy window to foreground.")]
+    Create(WinError),
+    AddItem(WinError),
+    Display(WinError),
     WindowForground,
-    #[error("Failed to display popup menu. {0}")]
-    Display(#[source] WinError),
+}
+
+impl std::fmt::Display for MenuError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MenuError::Create(e) => write!(f, "Failed to create popup menu. ({e})"),
+            MenuError::AddItem(e) => write!(f, "Failed to get process instance handle. ({e})"),
+            MenuError::Display(e) => write!(f, "Failed to display popup menu. ({e})"),
+            MenuError::WindowForground => write!(f, "Failed to bring dummy window to foreground."),
+        }
+    }
+}
+
+impl std::error::Error for MenuError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            MenuError::Create(e) => Some(e),
+            MenuError::AddItem(e) => Some(e),
+            MenuError::Display(e) => Some(e),
+            MenuError::WindowForground => None,
+        }
+    }
 }

@@ -7,7 +7,7 @@ edition = "2021"
 dpiaware = ["tray-indicator/dpiaware"]
 
 [dependencies]
-tray-indicator.workspace = true
+tray-indicator.path = "../../"
 
 [build-dependencies]
 tauri-winres = "0.1"

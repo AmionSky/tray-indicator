@@ -1,11 +1,10 @@
 # tray-indicator
 
-A simple tray-icon/app-indicator crate.
+A simple tray-icon crate.
 
 ## Supported platforms
 
 * Windows
-* Linux
 
 ## License
 
