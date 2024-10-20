@@ -11,12 +11,7 @@ pub struct Tray {
 
 impl Tray {
     pub fn new(guid: u128, title: &str) -> Self {
-        Self {
-            guid,
-            title: title.into(),
-            click: None,
-            menu: None,
-        }
+        Self { guid, title: title.into(), click: None, menu: None }
     }
 
     pub fn set_click<F: 'static + Fn()>(&mut self, action: F) {
