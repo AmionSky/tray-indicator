@@ -10,4 +10,4 @@ dpiaware = ["tray-indicator/dpiaware"]
 tray-indicator.path = "../../"
 
 [build-dependencies]
-tauri-winres = "0.1"
+winscribe = "0.1"
